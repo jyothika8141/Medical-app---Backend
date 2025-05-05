@@ -4,39 +4,40 @@ import edu.amrita.medical_app.demo.dto.LoginRequest;
 import edu.amrita.medical_app.demo.dto.LoginResponse;
 import edu.amrita.medical_app.demo.entity.User;
 import edu.amrita.medical_app.demo.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import edu.amrita.medical_app.demo.config.JwtService;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.stereotype.Service;
-
-import java.util.UUID;
 
 @Service
 public class AuthService {
 
-    @Autowired
-    private UserRepository userRepository;
+    private final UserRepository userRepository;
+    private final JwtService jwtService;
+    private final AuthenticationManager authenticationManager;
 
-    @Autowired
-    private PasswordEncoder passwordEncoder;
+    public AuthService(UserRepository userRepository, JwtService jwtService, AuthenticationManager authenticationManager) {
+        this.userRepository = userRepository;
+        this.jwtService = jwtService;
+        this.authenticationManager = authenticationManager;
+    }
 
     public LoginResponse authenticate(LoginRequest request) {
+        authenticationManager.authenticate(
+            new UsernamePasswordAuthenticationToken(
+                request.getEmail(),
+                request.getPassword()
+            )
+        );
+
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new IllegalArgumentException("Invalid email or password"));
 
-        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new IllegalArgumentException("Invalid email or password");
-        }
-
-        String token = null;
-        if (request.isRememberMe()) {
-            token = generateRememberMeToken();
-            // In a real application, you would store this token in the database
-            // with an expiration date and associate it with the user
-        }
+        String jwtToken = jwtService.generateToken(user);
 
         return new LoginResponse(
             "Login successful",
-            token,
+            jwtToken,
             user.getRole(),
             user.getFullName()
         );
@@ -53,11 +54,7 @@ public class AuthService {
         // 3. Implement a separate endpoint to handle the actual password reset
     }
 
-    private String generateRememberMeToken() {
-        return UUID.randomUUID().toString();
-    }
-
     private String generateResetToken() {
-        return UUID.randomUUID().toString();
+        return java.util.UUID.randomUUID().toString();
     }
 } 
