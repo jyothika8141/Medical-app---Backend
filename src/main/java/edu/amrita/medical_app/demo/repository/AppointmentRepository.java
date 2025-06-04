@@ -13,6 +13,8 @@ import java.util.List;
 public interface AppointmentRepository extends JpaRepository<Appointment, Long> {
     List<Appointment> findByDoctorAndDate(User doctor, LocalDate date);
     List<Appointment> findByPatientAndDate(User patient, LocalDate date);
+    List<Appointment> findByDoctor(User doctor);
+    List<Appointment> findByPatient(User patient);
     boolean existsByDoctorAndDateAndStartTimeLessThanAndEndTimeGreaterThan(
         User doctor, LocalDate date, LocalTime endTime, LocalTime startTime);
-} 
+}
